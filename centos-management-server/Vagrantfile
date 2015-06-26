@@ -1,0 +1,43 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+$inline_script = <<-EOSCRIPT
+    command -v curl >/dev/null 2>&1 || sudo yum -y install curl
+    command -v chef-client >/dev/null 2>&1 || curl -s  -L https://www.chef.io/chef/install.sh | sudo bash
+    chef-client -v | grep -q ' 12\.' || curl -s -L https://www.chef.io/chef/install.sh | sudo bash
+    sudo /usr/bin/chef-client -z -o recipe[app_cloudstack_management_server] -c /var/vagrant/solo.rb -l debug
+EOSCRIPT
+
+Vagrant.configure(2) do |centos_management_server|
+  centos_management_server.vm.box = "chef/centos-6.5"
+
+  # VM settings
+  centos_management_server.vm.provider "virtualbox" do |v|
+    v.name = "Cloudstack-Centos-Management-Server"
+    v.gui = true
+    v.customize [
+                  "modifyvm", :id,
+                  "--memory", 2048,
+                  "--cpus", 2,
+                  "--natdnshostresolver1", "on"
+                ]
+  end
+
+  # Disable default shared folder
+  centos_management_server.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
+
+  # Activate NFS Folders
+  centos_management_server.vm.synced_folder ".", "/var/vagrant", :nfs => true, :nfs_version => 3
+
+  # Network settings
+  centos_management_server.vm.hostname = "centos-management-server.cloudstack.dev.punkt.de"
+  centos_management_server.vm.network :private_network, ip: "192.168.56.100", netmask: "255.255.255.0"
+
+  # SSH settings
+  centos_management_server.ssh.forward_agent = true
+
+
+  centos_management_server.vm.provision :shell do |s|
+    s.inline = $inline_script
+  end
+end

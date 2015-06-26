@@ -1,0 +1,7 @@
+DEVICE=eth1.200
+ONBOOT=yes
+HOTPLUG=no
+BOOTPROTO=none
+TYPE=Ethernet
+VLAN=yes
+BRIDGE=cloudbr0
